@@ -27,6 +27,7 @@ pub struct PickupLines {
 }
 
 #[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
 pub struct BasicMon {
     pub abilities: Vec<String>,
     pub ascii: String,
@@ -70,4 +71,23 @@ pub struct Roasts {
 #[serde(rename_all = "camelCase")]
 pub struct Logos {
     pub data: Vec<JsonValue>,
+}
+
+pub struct Facts {
+    pub list: Vec<String>,
+}
+pub struct EightBall {
+    pub list: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Headline {
+    pub text: String,
+    pub fake: bool,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Headlines {
+    pub headlines: Vec<Headline>,
 }

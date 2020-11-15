@@ -8,6 +8,9 @@ use serde_json::Map;
 use serde_json::Value as JsonValue;
 
 use crate::datasets::model::BasicMon;
+use crate::datasets::model::EightBall;
+use crate::datasets::model::Facts;
+use crate::datasets::model::Headlines;
 use crate::datasets::model::Jokes;
 use crate::datasets::model::Logos;
 use crate::datasets::model::MonVec;
@@ -15,7 +18,6 @@ use crate::datasets::model::PickupLines;
 use crate::datasets::model::Roasts;
 use crate::datasets::model::WaifuData;
 use crate::datasets::model::YoDataset;
-
 
 fn read_file(path: String) -> Result<String, io::Error> {
     fs::read_to_string(path)
@@ -28,9 +30,21 @@ fn parsed_json<T: DeserializeOwned>(path: String) -> T {
     };
     let resjs: T = match serde_json::from_str(&res) {
         Ok(result) => result,
-        Err(error) => panic!("Error with{}", error),
+        Err(error) => panic!("Error with {} from {}", error, path),
     };
     resjs
+}
+fn readlines(path: &str) -> Vec<String> {
+    let text = match read_file(String::from(path)) {
+        Ok(file) => file,
+        Err(err) => panic!("Couldn't readlines {} for {}", err, path),
+    };
+    let mut text_vex: Vec<String> = Vec::new();
+    let lines = text.lines();
+    for line in lines {
+        text_vex.push(line.to_string());
+    }
+    text_vex
 }
 
 pub fn logodata() -> Logos {
@@ -74,15 +88,24 @@ pub fn mondata() -> MonVec {
 }
 
 pub fn roasts() -> Roasts {
-    let text = match read_file(String::from("src/data/roasts.txt")) {
-        Ok(file) => file,
-        Err(err) => panic!("Roasts no parse {}", err),
-    };
-    let mut text_vex: Vec<String> = Vec::new();
-    let lines = text.lines();
-    for line in lines {
-        text_vex.push(line.to_string());
-    }
+    let text_vex = readlines("./src/data/roasts.txt");
     let roasts: Roasts = Roasts { list: text_vex };
     roasts
+}
+
+pub fn eight_ball() -> EightBall {
+    let text_vex = readlines("./src/data/8ball.txt");
+    let response: EightBall = EightBall { list: text_vex };
+    response
+}
+
+pub fn facts() -> Facts {
+    let text_vex = readlines("./src/data/facts.txt");
+    let response: Facts = Facts { list: text_vex };
+    response
+}
+
+pub fn headlines() -> Headlines {
+    let headlines: Headlines = parsed_json::<Headlines>(String::from("./src/data/onion.json"));
+    headlines
 }

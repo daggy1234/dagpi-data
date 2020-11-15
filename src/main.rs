@@ -1,12 +1,14 @@
-use actix_web::{App, HttpRequest, HttpServer, middleware, Responder, web};
-//use dotenv;
-use env_logger;
-use reqwest;
+use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web_prom::PrometheusMetrics;
+//use dotenv;
 use std::collections::HashMap;
 mod datasets;
 
+mod eightball;
 mod error;
+mod facts;
+mod handler;
+mod headlines;
 mod jokes;
 mod logos;
 mod middlewares;
@@ -15,13 +17,13 @@ mod roasts;
 mod waifus;
 mod wtp;
 mod yomama;
-
-mod handler;
 //use actix_files as fs;
 
-async fn greet(req: HttpRequest) -> impl Responder {
-    let name = req.match_info().get("name").unwrap_or("World");
-    format!("Hello {}!", &name)
+async fn greet(_req: HttpRequest) -> impl Responder {
+    let fjs = serde_json::json!({
+        "data": "Dagpi Data API"
+    });
+    HttpResponse::Ok().json(fjs)
 }
 
 #[actix_rt::main]
@@ -47,6 +49,9 @@ async fn main() -> std::io::Result<()> {
             .data(datasets::linegen())
             .data(datasets::roasts())
             .data(datasets::logodata())
+            .data(datasets::facts())
+            .data(datasets::eight_ball())
+            .data(datasets::headlines())
             .wrap(middlewares::RequiresAuth)
             .wrap(prometheus.clone())
             .configure(wtp::init_routes)
@@ -56,11 +61,14 @@ async fn main() -> std::io::Result<()> {
             .configure(jokes::init_routes)
             .configure(roasts::init_routes)
             .configure(logos::init_routes)
+            .configure(headlines::init_routes)
+            .configure(eightball::init_routes)
+            .configure(facts::init_routes)
             .default_service(web::route().to(error::resp_not_found))
             .wrap(middleware::Logger::default())
     })
-        .workers(2)
-        .bind(format!("{}:{}", start, port))?
-        .run()
-        .await
+    .workers(2)
+    .bind(format!("{}:{}", start, port))?
+    .run()
+    .await
 }
