@@ -30,12 +30,13 @@ async fn greet(_req: HttpRequest) -> impl Responder {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     //Removed for production re-add when testing
-    dotenv::dotenv().unwrap();
+    //dotenv::dotenv().unwrap();
     std::env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
     let start = std::env::var("URL").expect("WE NEED A URL ");
     let port = std::env::var("PORT").expect("WE NEED A port ");
+    let sentry = std::env::var("SENTRY").expect("NEED SENTRY");
     let _guard =
-        sentry::init("https://af23394806f94ac69b0a35afbfe834be@o415223.ingest.sentry.io/5399907");
+        sentry::init(sentry);
     let client = reqwest::Client::new();
     let mut labels = HashMap::new();
     labels.insert("api".to_string(), "Dagpi-Data".to_string());
@@ -57,7 +58,7 @@ async fn main() -> std::io::Result<()> {
             .data(datasets::eight_ball())
             .data(datasets::headlines())
             .data(datasets::countries())
-            //.wrap(middlewares::RequiresAuth)
+            .wrap(middlewares::RequiresAuth)
             .wrap(prometheus.clone())
             .configure(wtp::init_routes)
             .configure(yomama::init_routes)
