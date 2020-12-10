@@ -8,6 +8,7 @@ use serde_json::Map;
 use serde_json::Value as JsonValue;
 
 use crate::datasets::model::BasicMon;
+use crate::datasets::model::Countries;
 use crate::datasets::model::EightBall;
 use crate::datasets::model::Facts;
 use crate::datasets::model::Headlines;
@@ -108,4 +109,9 @@ pub fn facts() -> Facts {
 pub fn headlines() -> Headlines {
     let headlines: Headlines = parsed_json::<Headlines>(String::from("./src/data/onion.json"));
     headlines
+}
+
+pub fn countries() -> Countries {
+    let countries: Countries = parsed_json::<Countries>(String::from("./src/data/countries.json"));
+    countries
 }

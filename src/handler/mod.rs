@@ -4,8 +4,8 @@ use actix_web::error::ResponseError;
 use actix_web::http::StatusCode;
 use actix_web::HttpResponse;
 use color_eyre::Report;
-use serde::{Serialize, Serializer};
 use serde::export::Formatter;
+use serde::{Serialize, Serializer};
 use tracing::error;
 
 #[derive(Debug, Serialize)]
@@ -56,8 +56,8 @@ impl AppError {
 
 impl Serialize for AppErrorCode {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_i32(self.0)
     }

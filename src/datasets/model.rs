@@ -91,3 +91,38 @@ pub struct Headline {
 pub struct Headlines {
     pub headlines: Vec<Headline>,
 }
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountryName {
+    pub common: String,
+    pub official: String,
+    pub native: JsonValue,
+}
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Country {
+    pub name: CountryName,
+    pub tld: Vec<String>,
+    pub cca2: String,
+    pub cca3: String,
+    pub ccn3: String,
+    pub currency: Vec<String>,
+    pub capital: String,
+    pub callingCode: Vec<String>,
+    pub altSpellings: Vec<String>,
+    pub region: String,
+    pub subregion: String,
+    pub languages: JsonValue,
+    pub translations: JsonValue,
+    pub latlng: Vec<f32>,
+    pub denonym: Option<String>,
+    pub landlocked: bool,
+    pub borders: Vec<String>,
+    pub area: f32,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Countries {
+    pub data: Vec<Country>,
+}
