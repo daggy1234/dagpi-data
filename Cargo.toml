@@ -28,5 +28,5 @@ futures = '0.3.5'
 sentry = "0.21.0"
 actix-service = "1.0.6"
 color-eyre = "0.5.2"
-reqwest = { version = "0.10.0", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.10.9", default-features = false, features = ["json", "rustls-tls"] }
 actix-web-prom = "0.5.0"
