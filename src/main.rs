@@ -35,8 +35,7 @@ async fn main() -> std::io::Result<()> {
     let start = std::env::var("URL").expect("WE NEED A URL ");
     let port = std::env::var("PORT").expect("WE NEED A port ");
     let sentry = std::env::var("SENTRY").expect("NEED SENTRY");
-    let _guard =
-        sentry::init(sentry);
+    let _guard = sentry::init(sentry);
     let client = reqwest::Client::new();
     let mut labels = HashMap::new();
     labels.insert("api".to_string(), "Dagpi-Data".to_string());

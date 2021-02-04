@@ -4,7 +4,10 @@ use std::rc::Rc;
 use std::task::{Context, Poll};
 
 use actix_service::{Service, Transform};
-use actix_web::{dev::ServiceRequest, dev::ServiceResponse, web, Error, HttpResponse};
+use actix_web::client::WsClientError::SendRequest;
+use actix_web::middleware::errhandlers::ErrorHandlerResponse::Response;
+use actix_web::{dev::ServiceRequest, dev::ServiceResponse, web, Error, HttpResponse, Responder};
+use color_eyre::SectionExt;
 use futures::future::{ok, Ready};
 use futures::Future;
 use serde::{Deserialize, Serialize};
@@ -13,6 +16,9 @@ use serde::{Deserialize, Serialize};
 struct AuthResponse {
     auth: bool,
     ratelimited: bool,
+    premium: bool,
+    ratelimit: i32,
+    left: i32,
 }
 
 #[derive(Serialize)]
@@ -72,20 +78,22 @@ where
 
         Box::pin(async move {
             let path = req.uri().path();
+            let mut left = "Nan".to_string();
+            let mut limit = "Nan".to_string();
             println!("{}", path);
             if path == "/" || path == "/metrics" {
                 return Ok(svc.call(req).await.unwrap());
             }
             let header = req.headers().get("Authorization");
-            let is_valid: i32 = (|| async {
+            let is_valid: (i32, String, String) = (|| async {
                 let header = match header {
                     Some(header) => header,
-                    None => return 403,
+                    None => return (403, limit, left),
                 };
                 let header = match header.to_str() {
                     Ok(header) => header,
 
-                    Err(_) => return 500,
+                    Err(_) => return (500, limit, left),
                 };
                 //let client = req.app_data::<reqwest::Client>().expect("NO CLIENT");
                 //let _dat = req.app_data::<web::Data<MonVec>>().expect("FAKE BALLS");
@@ -103,21 +111,29 @@ where
                     .await;
                 let resp = match resp {
                     Ok(resp) => resp,
-                    Err(_) => return 500,
+                    Err(_) => return (500, limit, left),
                 };
                 let resp: AuthResponse = match resp.json().await {
                     Ok(resp) => resp,
-                    Err(_) => return 500,
+                    Err(_) => return (500, limit, left),
                 };
+                limit = format!("{}", resp.ratelimit);
+                left = format!("{}", resp.left);
                 match (resp.auth, resp.ratelimited) {
-                    (true, true) => 429,
-                    (true, false) => 200,
-                    (false, _) => 403,
+                    (true, true) => return (429, limit, left),
+                    (true, false) => return (200, limit, left),
+                    (false, _) => return (403, limit, left),
                 }
             })()
             .await;
-            match is_valid {
-                200 => return Ok(svc.call(req).await.unwrap()),
+            match is_valid.0 {
+                200 => {
+                    let mut r: ServiceResponse<B> = svc.call(req).await.unwrap();
+                    let h = r.headers_mut();
+                    h.insert("a".parse().unwrap(), is_valid.1.parse().unwrap());
+                    h.insert("b".parse().unwrap(), is_valid.2.parse().unwrap());
+                    return Ok(r);
+                }
                 403 => {
                     return Ok(req.into_response(
                         HttpResponse::Forbidden()
@@ -130,6 +146,8 @@ where
                 429 => {
                     return Ok(req.into_response(
                         HttpResponse::TooManyRequests()
+                            .header("X-Ratelimit-Limit", is_valid.1)
+                            .header("X-Ratelimit-Left", is_valid.2)
                             .json(ErrorResp {
                                 message: "Ratelimited",
                             })
