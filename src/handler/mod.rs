@@ -1,11 +1,10 @@
-use std::convert::From;
-
 use actix_web::error::ResponseError;
 use actix_web::http::StatusCode;
 use actix_web::HttpResponse;
 use color_eyre::Report;
-use serde::export::Formatter;
 use serde::{Serialize, Serializer};
+use std::convert::From;
+use std::fmt;
 use tracing::error;
 
 #[derive(Debug, Serialize)]
@@ -86,8 +85,8 @@ impl ResponseError for AppError {
     }
 }
 
-impl std::fmt::Display for AppError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{:?}", self)
     }
 }

@@ -117,9 +117,9 @@ where
                 limit = format!("{}", resp.ratelimit);
                 left = format!("{}", resp.left);
                 match (resp.auth, resp.ratelimited) {
-                    (true, true) => return (429, limit, left),
-                    (true, false) => return (200, limit, left),
-                    (false, _) => return (403, limit, left),
+                    (true, true) => (429, limit, left),
+                    (true, false) => (200, limit, left),
+                    (false, _) => (403, limit, left),
                 }
             })()
             .await;
@@ -129,38 +129,32 @@ where
                     let h = r.headers_mut();
                     h.insert("a".parse().unwrap(), is_valid.1.parse().unwrap());
                     h.insert("b".parse().unwrap(), is_valid.2.parse().unwrap());
-                    return Ok(r);
+                    Ok(r)
                 }
-                403 => {
-                    return Ok(req.into_response(
-                        HttpResponse::Forbidden()
-                            .json(ErrorResp {
-                                message: "Unauthorized",
-                            })
-                            .into_body(),
-                    ))
-                }
-                429 => {
-                    return Ok(req.into_response(
-                        HttpResponse::TooManyRequests()
-                            .header("X-Ratelimit-Limit", is_valid.1)
-                            .header("X-Ratelimit-Left", is_valid.2)
-                            .json(ErrorResp {
-                                message: "Ratelimited",
-                            })
-                            .into_body(),
-                    ));
-                }
-                _ => {
-                    return Ok(req.into_response(
-                        HttpResponse::InternalServerError()
-                            .json(ErrorResp {
-                                message: "Server having issues",
-                            })
-                            .into_body(),
-                    ));
-                }
-            };
+                403 => Ok(req.into_response(
+                    HttpResponse::Forbidden()
+                        .json(ErrorResp {
+                            message: "Unauthorized",
+                        })
+                        .into_body(),
+                )),
+                429 => Ok(req.into_response(
+                    HttpResponse::TooManyRequests()
+                        .header("X-Ratelimit-Limit", is_valid.1)
+                        .header("X-Ratelimit-Left", is_valid.2)
+                        .json(ErrorResp {
+                            message: "Ratelimited",
+                        })
+                        .into_body(),
+                )),
+                _ => Ok(req.into_response(
+                    HttpResponse::InternalServerError()
+                        .json(ErrorResp {
+                            message: "Server having issues",
+                        })
+                        .into_body(),
+                )),
+            }
         })
     }
 }
