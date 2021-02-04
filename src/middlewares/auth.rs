@@ -4,10 +4,7 @@ use std::rc::Rc;
 use std::task::{Context, Poll};
 
 use actix_service::{Service, Transform};
-use actix_web::client::WsClientError::SendRequest;
-use actix_web::middleware::errhandlers::ErrorHandlerResponse::Response;
-use actix_web::{dev::ServiceRequest, dev::ServiceResponse, web, Error, HttpResponse, Responder};
-use color_eyre::SectionExt;
+use actix_web::{dev::ServiceRequest, dev::ServiceResponse, web, Error, HttpResponse};
 use futures::future::{ok, Ready};
 use futures::Future;
 use serde::{Deserialize, Serialize};
