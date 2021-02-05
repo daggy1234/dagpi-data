@@ -1,13 +1,15 @@
-use std::cell::RefCell;
-use std::pin::Pin;
-use std::rc::Rc;
-use std::task::{Context, Poll};
-
+use crate::middlewares::Stat;
+use crate::Request;
 use actix_service::{Service, Transform};
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, web, Error, HttpResponse};
 use futures::future::{ok, Ready};
 use futures::Future;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
+use std::pin::Pin;
+use std::rc::Rc;
+use std::task::{Context, Poll};
+use tokio::sync::mpsc::Sender;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct AuthResponse {
@@ -72,18 +74,19 @@ where
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
         let mut svc = self.service.clone();
-
         Box::pin(async move {
-            let path = req.uri().path();
             let mut left = "Nan".to_string();
             let mut limit = "Nan".to_string();
-            println!("{}", path);
+
+            let path = req.path();
             if path == "/" || path == "/metrics" {
                 return Ok(svc.call(req).await.unwrap());
             }
-            let header = req.headers().get("Authorization");
+
             let is_valid: (i32, String, String) = (|| async {
-                let header = match header {
+                let header = req.headers();
+                let auth_head = header.get("Authorization");
+                let header = match auth_head {
                     Some(header) => header,
                     None => return (403, limit, left),
                 };
@@ -92,9 +95,6 @@ where
 
                     Err(_) => return (500, limit, left),
                 };
-                //let client = req.app_data::<reqwest::Client>().expect("NO CLIENT");
-                //let _dat = req.app_data::<web::Data<MonVec>>().expect("FAKE BALLS");
-                //let client = reqwest::Client::new();
                 let client = req.app_data::<web::Data<reqwest::Client>>().unwrap();
                 let auth_url = std::env::var("auth_url").expect("WE NEED A URL BRUH");
                 let req_url: String = format!("{}/auth/{}", auth_url, header);
@@ -125,10 +125,39 @@ where
             .await;
             match is_valid.0 {
                 200 => {
+                    let header = req.headers();
+                    let ua = match header.get("User-Agent") {
+                        Some(h) => h.to_str().unwrap().to_string(),
+                        None => "No UserAgent".to_string(),
+                    };
+                    let token = header
+                        .get("Authorization")
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string();
+
                     let mut r: ServiceResponse<B> = svc.call(req).await.unwrap();
                     let h = r.headers_mut();
                     h.insert("a".parse().unwrap(), is_valid.1.parse().unwrap());
                     h.insert("b".parse().unwrap(), is_valid.2.parse().unwrap());
+                    let freq = r.request().clone();
+                    actix_web::rt::spawn(async move {
+                        let tx = &freq.app_data::<web::Data<Sender<Request>>>().unwrap();
+                        let (resp_tx, resp_rx) = tokio::sync::oneshot::channel();
+                        let cmd = Request::Stat {
+                            payload: Stat {
+                                user_agent: ua,
+                                route: freq.path().to_string(),
+                                api: "data".to_string(),
+                                token,
+                            },
+                            resp: resp_tx,
+                        };
+                        tx.send(cmd).await.unwrap();
+                        let res = resp_rx.await.unwrap();
+                        println!("Recieved Status {:?}", res);
+                    });
                     Ok(r)
                 }
                 403 => Ok(req.into_response(
