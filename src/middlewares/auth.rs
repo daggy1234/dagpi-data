@@ -139,8 +139,8 @@ where
 
                     let mut r: ServiceResponse<B> = svc.call(req).await.unwrap();
                     let h = r.headers_mut();
-                    h.insert("a".parse().unwrap(), is_valid.1.parse().unwrap());
-                    h.insert("b".parse().unwrap(), is_valid.2.parse().unwrap());
+                    h.insert("X-Ratelimit-Limit".parse().unwrap(), is_valid.1.parse().unwrap());
+                    h.insert("X-Ratelimit-Left".parse().unwrap(), is_valid.2.parse().unwrap());
                     let freq = r.request().clone();
                     actix_web::rt::spawn(async move {
                         let tx = &freq.app_data::<web::Data<Sender<Request>>>().unwrap();
