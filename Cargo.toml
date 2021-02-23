@@ -24,7 +24,7 @@ rand = "0.7.3"
 log = "0.4.11"
 tokio = {version="1.1.1", features=["sync"]}
 env_logger = "0.7.1"
-tracing = "0.1.19"
+tracing = "0.1.25"
 futures = '0.3.5'
 sentry = "0.21.0"
 actix-service = "1.0.6"
