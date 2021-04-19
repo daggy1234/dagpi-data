@@ -9,7 +9,7 @@ async fn random_post(data: web::Data<MonVec>) -> impl Responder {
     let post = rand::thread_rng().gen_range(0, &data.list.len() - 1);
     let fjs: &BasicMon = &data.list[post];
     HttpResponse::Ok().json(
-        serde_json::json!({"question": format!("https://logoassetsgame.s3.us-east-2.amazonaws.com/wtp/pokemon/{}q.png",fjs.id),"answer": format!("https://logoassetsgame.s3.us-east-2.amazonaws.com/wtp/pokemon/{}a.png",fjs.id),"Data":fjs})
+        serde_json::json!({"question": format!("https://cdn.dagpi.xyz/wtp/pokemon/{}q.png",fjs.id),"answer": format!("https://cdn.dagpi.xyz/wtp/pokemon/{}a.png",fjs.id),"Data":fjs})
     )
 }
 

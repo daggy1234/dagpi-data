@@ -10,7 +10,7 @@ async fn random_flag(data: web::Data<Countries>) -> impl Responder {
     let fjs: &Country = &data.data[post];
     let name = fjs.name.common.to_lowercase().replace(" ", "");
     HttpResponse::Ok().json(
-        serde_json::json!({"flag": format!("https://logoassetsgame.s3.us-east-2.amazonaws.com/flags/{}.png",name),"Data":fjs})
+        serde_json::json!({"flag": format!("https://cdn.dagpi.xyz/flags/{}.png",name),"Data":fjs})
     )
 }
 
