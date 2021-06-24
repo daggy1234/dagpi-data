@@ -3,9 +3,9 @@ use actix_web_prom::PrometheusMetrics;
 //use dotenv;
 use std::collections::HashMap;
 mod datasets;
-
 mod eightball;
 mod error;
+mod error_handler;
 mod facts;
 mod flag;
 mod headlines;
@@ -15,6 +15,8 @@ mod middlewares;
 mod pickup;
 mod roasts;
 use tokio::sync::{mpsc, oneshot};
+mod captchas;
+mod typeracer;
 mod waifus;
 mod wtp;
 mod yomama;
@@ -77,6 +79,8 @@ async fn main() -> std::io::Result<()> {
             .data(datasets::eight_ball())
             .data(datasets::headlines())
             .data(datasets::countries())
+            .data(datasets::typeracer_data())
+            .data(datasets::captchas())
             .wrap(middlewares::RequiresAuth)
             .wrap(prometheus.clone())
             .configure(wtp::init_routes)
@@ -90,7 +94,9 @@ async fn main() -> std::io::Result<()> {
             .configure(eightball::init_routes)
             .configure(facts::init_routes)
             .configure(flag::init_routes)
-            .default_service(web::route().to(error::resp_not_found))
+            .configure(captchas::init_routes)
+            .configure(typeracer::init_routes)
+            .service(web::scope("").wrap(error_handler::error_handlers()))
             .wrap(middleware::Logger::default())
     })
     .workers(2)

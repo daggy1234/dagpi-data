@@ -20,6 +20,9 @@ use crate::datasets::model::Roasts;
 use crate::datasets::model::WaifuData;
 use crate::datasets::model::YoDataset;
 
+use super::Captchas;
+use super::Typeracer;
+
 fn read_file(path: String) -> Result<String, io::Error> {
     fs::read_to_string(path)
 }
@@ -114,4 +117,14 @@ pub fn headlines() -> Headlines {
 pub fn countries() -> Countries {
     let countries: Countries = parsed_json::<Countries>(String::from("./src/data/countries.json"));
     countries
+}
+
+pub fn captchas() -> Captchas {
+    let captchas: Captchas = parsed_json::<Captchas>(String::from("./src/data/captcha.json"));
+    captchas
+}
+
+pub fn typeracer_data() -> Typeracer {
+    let typeracer: Typeracer = parsed_json::<Typeracer>(String::from("./src/data/typeracer.json"));
+    typeracer
 }

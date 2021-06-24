@@ -126,3 +126,25 @@ pub struct Country {
 pub struct Countries {
     pub data: Vec<Country>,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Captcha {
+    pub image: String,
+    pub answer: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Captchas {
+    pub data: Vec<Captcha>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TyperacerSentence {
+    pub sentence: String,
+    pub image: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Typeracer {
+    pub data: Vec<TyperacerSentence>,
+}
