@@ -18,6 +18,7 @@ struct AuthResponse {
     premium: bool,
     ratelimit: i32,
     left: i32,
+    after: i64,
 }
 
 #[derive(Serialize)]
@@ -77,23 +78,24 @@ where
         Box::pin(async move {
             let mut left = "Nan".to_string();
             let mut limit = "Nan".to_string();
+            let mut after: i64 = 0;
 
             let path = req.path();
             if path == "/" || path == "/metrics" {
                 return Ok(svc.call(req).await.unwrap());
             }
 
-            let is_valid: (i32, String, String) = (|| async {
+            let is_valid: (i32, String, String, i64) = (|| async {
                 let header = req.headers();
                 let auth_head = header.get("Authorization");
                 let header = match auth_head {
                     Some(header) => header,
-                    None => return (403, limit, left),
+                    None => return (403, limit, left, after),
                 };
                 let header = match header.to_str() {
                     Ok(header) => header,
 
-                    Err(_) => return (500, limit, left),
+                    Err(_) => return (500, limit, left, after),
                 };
                 let client = req.app_data::<web::Data<reqwest::Client>>().unwrap();
                 let auth_url = std::env::var("auth_url").expect("WE NEED A URL BRUH");
@@ -108,18 +110,20 @@ where
                     .await;
                 let resp = match resp {
                     Ok(resp) => resp,
-                    Err(_) => return (500, limit, left),
+                    Err(_) => return (500, limit, left, after),
                 };
                 let resp: AuthResponse = match resp.json().await {
                     Ok(resp) => resp,
-                    Err(_) => return (500, limit, left),
+                    Err(_) => return (500, limit, left, after),
                 };
                 limit = format!("{}", resp.ratelimit);
                 left = format!("{}", resp.left);
+                after = resp.after;
+                println!("{}", after);
                 match (resp.auth, resp.ratelimited) {
-                    (true, true) => (429, limit, left),
-                    (true, false) => (200, limit, left),
-                    (false, _) => (403, limit, left),
+                    (true, true) => (429, limit, left, after),
+                    (true, false) => (200, limit, left, after),
+                    (false, _) => (403, limit, left, after),
                 }
             })()
             .await;
@@ -139,8 +143,18 @@ where
 
                     let mut r: ServiceResponse<B> = svc.call(req).await.unwrap();
                     let h = r.headers_mut();
-                    h.insert("X-Ratelimit-Limit".parse().unwrap(), is_valid.1.parse().unwrap());
-                    h.insert("X-Ratelimit-Left".parse().unwrap(), is_valid.2.parse().unwrap());
+                    h.insert(
+                        "X-RateLimit-Limit".parse().unwrap(),
+                        is_valid.1.parse().unwrap(),
+                    );
+                    h.insert(
+                        "X-RateLimit-Remaining".parse().unwrap(),
+                        is_valid.2.parse().unwrap(),
+                    );
+                    h.insert(
+                        "X-RateLimit-Reset".parse().unwrap(),
+                        is_valid.3.to_string().parse().unwrap(),
+                    );
                     let freq = r.request().clone();
                     actix_web::rt::spawn(async move {
                         let tx = &freq.app_data::<web::Data<Sender<Request>>>().unwrap();
@@ -169,8 +183,9 @@ where
                 )),
                 429 => Ok(req.into_response(
                     HttpResponse::TooManyRequests()
-                        .header("X-Ratelimit-Limit", is_valid.1)
-                        .header("X-Ratelimit-Left", is_valid.2)
+                        .header("X-RateLimit-Limit", is_valid.1)
+                        .header("X-RateLimit-Remaining", is_valid.2)
+                        .header("X-RateLimit-Reset", is_valid.3.to_string())
                         .json(ErrorResp {
                             message: "Ratelimited",
                         })

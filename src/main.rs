@@ -50,7 +50,7 @@ impl std::fmt::Debug for middlewares::Stat {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     //Removed for production re-add when testing
-    // dotenv::dotenv().ok();
+    dotenv::dotenv().ok();
     std::env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
     let start = std::env::var("URL").expect("WE NEED A URL ");
     let port = std::env::var("PORT").expect("WE NEED A port ");
